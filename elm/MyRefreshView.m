@@ -18,6 +18,8 @@ static float const USCircleHeight =30;
 //动画持续时间
 #define DURATION 0.5
 
+typedef void (^USAnimationBlock)(BOOL finished);
+
 @interface MyRefreshView()
 
 //直线
@@ -29,8 +31,6 @@ static float const USCircleHeight =30;
 
 @property (nonatomic, weak  ) UIScrollView * scrollView;
 @property (nonatomic, assign) CGFloat progress;
-//动画状态
-@property (nonatomic, assign) BOOL animating;
 //旋转中
 @property (nonatomic, assign) BOOL rotating;
 
@@ -148,7 +148,7 @@ static float const USCircleHeight =30;
 //        }
 //    }
 
-//    NSLog(@"===%f===%f---%f---%f--%d",shapeLayer.strokeStart,shapeLayer.strokeEnd,circleLayer.strokeStart,circleLayer.strokeEnd,self.scrollView.tracking);
+    NSLog(@"===%f===%f---%f---%f--",shapeLayer.strokeStart,shapeLayer.strokeEnd,circleLayer.strokeStart,circleLayer.strokeEnd);
 }
 //旋转动画
 -(void)animationAllCircleShapeLayer:(CAShapeLayer *)circleShapeLayer formValue:(NSValue *)fromValue toValue:(NSValue *)toValue forKey:(NSString *)forKey
@@ -160,14 +160,13 @@ static float const USCircleHeight =30;
     [circleShapeLayer addAnimation:rotateAnimation forKey:forKey];
     if (self.circleShapeLayer2 ==circleShapeLayer) {
         self.rotating = YES;
-        self.animating = NO;
     }
 }
 
 - (void)stopAnimation
 {
     [UIView animateWithDuration:DURATION animations:^{
-        [self changeScrollViewCotentInsetsOfTop:0.f duration:0.f];
+        [self changeScrollViewCotentInsetsOfTop:0.f duration:0.f compleionBlock:nil];
     } completion:^(BOOL finished) {
         [self.circleShapeLayer removeAllAnimations];
         [self.circleShapeLayer2 removeAllAnimations];
@@ -186,7 +185,6 @@ static float const USCircleHeight =30;
     self.shapeLayer2.strokeEnd=0.f;
     self.circleShapeLayer2.strokeEnd=SHAPELAYER_START;
     
-    self.animating = NO;
     self.rotating = NO;
 }
 
@@ -220,39 +218,42 @@ static float const USCircleHeight =30;
             
             self.y= -USCircleHeight;
             
-            [self changeScrollViewCotentInsetsOfTop:-(self.scrollView.contentOffset.y) duration:DURATION];
-
-//            if (self.animating) {
-//                [self changeScrollViewCotentInsetsOfTop:-(self.scrollView.contentOffset.y) duration:DURATION];
-//            }else{
-//                [self changeScrollViewCotentInsetsOfTop:0.f duration:DURATION];
-//            }
-        }else if(_progress > USCircleHeight)
+            if (!self.rotating) {
+                [self changeScrollViewCotentInsetsOfTop:0 duration:DURATION compleionBlock:nil];
+            }else
+            {
+                [self changeScrollViewCotentInsetsOfTop:_progress duration:DURATION compleionBlock:nil];
+            }
+        }else if(_progress >= USCircleHeight)
         {
             //当前view居中设置
             self.y = -((_progress - USCircleHeight)/2.0 + USCircleHeight);
-            [self changeScrollViewCotentInsetsOfTop:USCircleHeight duration:DURATION];
+            if (self.rotating) {
+                if (!self.scrollView.dragging) {
+                    [self changeScrollViewCotentInsetsOfTop:USCircleHeight duration:DURATION compleionBlock:nil];
+                }
+            }else
+            {
+                [self changeScrollViewCotentInsetsOfTop:0 duration:DURATION compleionBlock:nil];
+                [self resetLayerStorkeValue];
+            }
             [self startAnimation];
-        }else if(_progress == USCircleHeight && !self.scrollView.tracking && !self.rotating){
-            [self changeScrollViewCotentInsetsOfTop:0.f duration:DURATION];
-            [self resetLayerStorkeValue];
         }
     }
 }
 - (void)startAnimation
 {
-    self.animating = YES;
     [self lineAnimaiionWithLineLayer:self.shapeLayer circleLayer:self.circleShapeLayer progress:self.progress];
     [self lineAnimaiionWithLineLayer:self.shapeLayer2 circleLayer:self.circleShapeLayer2 progress:self.progress];
 }
 
 //改变contentInset.top
-- (void)changeScrollViewCotentInsetsOfTop:(CGFloat)top duration:(CGFloat)duration
+- (void)changeScrollViewCotentInsetsOfTop:(CGFloat)top duration:(CGFloat)duration compleionBlock:(USAnimationBlock)compleionBlock
 {
     [UIView animateWithDuration:duration animations:^{
         UIEdgeInsets insets =self.scrollView.contentInset;
         insets.top=top;
         self.scrollView.contentInset=insets;
-    }];
+    } completion:compleionBlock];
 }
 @end
