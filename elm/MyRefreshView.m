@@ -219,7 +219,9 @@ typedef void (^USAnimationBlock)(BOOL finished);
             self.y= -USCircleHeight;
             
             if (!self.rotating) {
-                [self changeScrollViewCotentInsetsOfTop:0 duration:DURATION compleionBlock:nil];
+                [self changeScrollViewCotentInsetsOfTop:0 duration:DURATION compleionBlock:^(BOOL finished){
+                    [self resetLayerStorkeValue];
+                }];
             }else
             {
                 [self changeScrollViewCotentInsetsOfTop:_progress duration:DURATION compleionBlock:nil];
@@ -235,7 +237,6 @@ typedef void (^USAnimationBlock)(BOOL finished);
             }else
             {
                 [self changeScrollViewCotentInsetsOfTop:0 duration:DURATION compleionBlock:nil];
-                [self resetLayerStorkeValue];
             }
             [self startAnimation];
         }
